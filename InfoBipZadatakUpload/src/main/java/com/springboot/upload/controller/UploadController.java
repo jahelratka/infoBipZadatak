@@ -3,6 +3,7 @@ package com.springboot.upload.controller;
 import com.springboot.upload.config.CustomMultipartResolver;
 import com.springboot.upload.entity.DurationEntity;
 import com.springboot.upload.entity.ProgressEntity;
+import com.springboot.upload.model.UploadModel;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -22,15 +23,24 @@ public class UploadController {
 
     @PostMapping("upload")
     @ResponseBody
-    public Map<String, Object> upload(MultipartFile file){
+    public Map<String, Object> upload(MultipartFile file, HttpServletRequest request){
+        String fileName = request.getHeader("X-Upload-File");
         Map<String, Object> result = new HashMap<>();
+
+        for (var uploadModel : CustomMultipartResolver.uploadModelList) {
+            if(uploadModel.getId().indexOf(fileName) > -1){
+                result.put("msg", "File with same name is already uploading");
+                return result;
+            }
+        }
+
         if(CustomMultipartResolver.uploadModelList.size() >= 100){
             result.put("msg", "Max Number of Files reached");
             return result;
         }
         if (file != null && !file.isEmpty()){
             try {
-                file.transferTo(new File("uploaded/"+file.getOriginalFilename()));
+                file.transferTo(new File("uploaded/"+fileName));
                 result.put("code", 200);
                 result.put("msg", "success");
             } catch (IOException e) {
